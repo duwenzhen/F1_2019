@@ -75,8 +75,8 @@ class PacketRecorder:
 
     def _open_database(self):
         self.client = InfluxDBClient(host='127.0.0.1', port=8086, username='admin', password='admin')
-        self.client.drop_database("F1_2019")
-        self.client.create_database("F1_2019")
+        #self.client.drop_database("F1_2019")
+        #self.client.create_database("F1_2019")
         self.client.switch_database('F1_2019')
         logging.info("Opening influxdb")
 
@@ -115,9 +115,6 @@ class PacketRecorder:
 
 
 
-    def send_processed_message(self, jsonMessages):
-        for jm in jsonMessages:
-            self.client.write_points(jm)
 
     def process_incoming_packets(self, timestamped_packets):
         """Process incoming packets by recording them into the correct database file.
@@ -160,7 +157,7 @@ class PacketRecorder:
             if header.packetId == PacketID.MOTION:
                 jsonMessages[PacketID.MOTION] = self.game.processMotion(unpacket, timestamp)
             elif header.packetId == PacketID.SESSION:
-                jsonMessages[PacketID.SESSION] = self.game.processSession(unpacket, timestamp )
+                jsonMessages[PacketID.SESSION] = self.game.processSession(unpacket, timestamp)
             elif header.packetId == PacketID.LAP_DATA:
                 jsonMessages[PacketID.LAP_DATA] = self.game.processLap(unpacket, timestamp)
             elif header.packetId == PacketID.EVENT:
@@ -221,7 +218,7 @@ class PacketRecorderThread(threading.Thread):
         logging.info("Recorder thread started.")
 
         quitflag = False
-        inactivity_timer = datetime.datetime.now()
+        inactivity_timer = datetime.datetime.utcnow()
         while not quitflag:
 
             # Calculate the timeout value that will bring us in sync with the next period.
@@ -243,7 +240,7 @@ class PacketRecorderThread(threading.Thread):
                 recorder.process_incoming_packets(packets)
                 packets.clear()
             else:
-                t_now = datetime.datetime.now()
+                t_now = datetime.datetime.utcnow()
                 age = t_now - inactivity_timer
                 recorder.no_packets_received(age)
                 inactivity_timer = t_now
@@ -308,7 +305,7 @@ class PacketReceiverThread(threading.Thread):
         quitflag = False
         while not quitflag:
             for (key, events) in selector.select():
-                timestamp = datetime.datetime.now()
+                timestamp = datetime.datetime.utcnow()
                 if key == key_udp_socket:
                     # All telemetry UDP packets fit in 2048 bytes with room to spare.
                     packet = udp_socket.recv(2048)

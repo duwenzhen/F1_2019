@@ -1,4 +1,4 @@
-from f1_2019_telemetry.packets import PacketHeader, PacketID, HeaderFieldsToPacketType, unpack_udp_packet, PacketCarStatusData_V1, PacketCarTelemetryData_V1, PacketCarSetupData_V1, PacketLapData_V1, PacketMotionData_V1, PacketSessionData_V1, PacketEventData_V1, PacketParticipantsData_V1
+from f1_2019_telemetry.packets import PacketHeader, PacketID, HeaderFieldsToPacketType, unpack_udp_packet, PacketCarStatusData_V1, PacketCarTelemetryData_V1, PacketCarSetupData_V1, PacketLapData_V1, PacketMotionData_V1, PacketSessionData_V1, PacketEventData_V1, PacketParticipantsData_V1, TrackIDs
 
 
 class Game:
@@ -6,6 +6,7 @@ class Game:
     def __init__(self):
         self.drivers = []
         self.sessionID = None
+        self.sessionIDBrut = None
         self.init = False
 
     def IsInitialized(self):
@@ -230,9 +231,15 @@ class Game:
             i = i + 1
         return json
 
+    def mySessionId(self, packet, time):
+        if packet.header.sessionUID != self.sessionIDBrut:
+            self.sessionIDBrut = packet.header.sessionUID
+            self.sessionID = time.strftime('%Y%m%d_%H%M') + "_" + TrackIDs[packet.trackId] + "_" + str(packet.m_formula)
+        return self.sessionID
+
     def processSession(self, packet : PacketSessionData_V1, time):
         json = []
-        self.sessionID = packet.header.sessionUID
+        self.sessionID = self.mySessionId(packet, time)
         if not self.IsInitialized():
             return json
         dic = {}
